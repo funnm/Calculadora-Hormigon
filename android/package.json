@@ -1,0 +1,15 @@
+{
+  "name": "calculadora-hormigon-android",
+  "version": "2.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Aplicación Android para Calculadora de Hormigón (Engineering Suite Pro)",
+  "scripts": {
+    "sync": "node scripts/sync-web.mjs",
+    "sync:build-web": "node scripts/sync-web.mjs --build-web",
+    "build": "node scripts/build-apk.mjs",
+    "build:full": "node scripts/sync-web.mjs --build-web && node scripts/build-apk.mjs",
+    "install:device": "node scripts/build-apk.mjs --install --launch",
+    "dev:tablet": "node scripts/sync-web.mjs --build-web && node scripts/build-apk.mjs --install --launch"
+  }
+}

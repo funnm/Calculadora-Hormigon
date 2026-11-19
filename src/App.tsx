@@ -1,368 +1,833 @@
-import { useMemo, useState, type ReactNode } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
+  Activity,
+  BookOpen,
+  Box,
   Calculator,
+  ChevronDown,
   ClipboardCheck,
-  Droplet,
+  CloudCheck,
+  Download,
+  FileDown,
+  FileJson,
+  FileSpreadsheet,
   FileText,
-  Hash,
+  Filter,
+  FolderOpen,
+  History,
+  Layers,
+  LayoutDashboard,
+  Menu,
   Moon,
-  Package,
+  PanelLeftClose,
+  PanelLeftOpen,
+  Plus,
+  Printer,
   Scale,
-  Shovel,
+  Settings,
+  ShieldCheck,
+  SlidersHorizontal,
   Sun,
+  TrendingUp,
+  Upload,
+  X,
 } from 'lucide-react';
+import { useConcreteWorkspace } from './hooks/useConcreteWorkspace';
+import {
+  calculateConcreteDesignMetrics,
+  validateConcreteDesign,
+} from './utils/concreteCalculations';
+import {
+  fitAllStrengthRegressions,
+  getBestStrengthRegression,
+} from './utils/regressionCalculations';
+import { calculateStrengthControl } from './utils/strengthControl';
+import { generateConcretePDF } from './utils/pdfGenerator';
+import { exportConcreteExcel } from './utils/excelGenerator';
+import { DashboardPage } from './components/dashboard/DashboardPage';
+import { QuickFieldDosage } from './components/concrete/QuickFieldDosage';
+import { ProjectInfoForm } from './components/concrete/ProjectInfoForm';
+import { CoreMaterials } from './components/concrete/CoreMaterials';
+import { MaterialPropertiesForm } from './components/concrete/MaterialPropertiesForm';
+import { AdditivesManager } from './components/concrete/AdditivesManager';
+import { SieveAnalysis } from './components/concrete/SieveAnalysis';
+import { StrengthDesign } from './components/concrete/StrengthDesign';
+import { WaterCementDesign } from './components/concrete/WaterCementDesign';
+import { AbsoluteVolume } from './components/concrete/AbsoluteVolume';
+import { CoreDosing } from './components/concrete/CoreDosing';
+import { FinalMix } from './components/concrete/FinalMix';
+import { StrengthCurve } from './components/concrete/StrengthCurve';
+import { StrengthControl } from './components/concrete/StrengthControl';
+import { ReportPage } from './components/pages/ReportPage';
+import { HistoryPage } from './components/pages/HistoryPage';
+import { SettingsPage } from './components/pages/SettingsPage';
+import { TechnicalDocumentation } from './components/documentation/TechnicalDocumentation';
+import { Footer } from './components/common/Footer';
+import {
+  APP_NAME,
+  APP_VERSION_LABEL,
+  SITE_AUTHOR,
+  SUITE_APPS,
+  SUITE_NAME,
+} from './config/site';
+import type { ConcreteDesign } from './types';
 
-type StrengthKey = 'H-140' | 'H-180' | 'H-210' | 'H-240' | 'H-280' | 'H-300' | 'H-350';
-
-interface MixPreset {
-  key: StrengthKey;
-  fcMpa: number;
-  cementKgM3: number;
-  sandBucketsM3: number;
-  gravelBucketsM3: number;
-  waterMinLM3: number;
-  waterMaxLM3: number;
+interface AndroidBridgeWindow extends Window {
+  AndroidBridge?: {
+    saveExportFile?: (content: string, filename: string, mimeType: string, isBase64: boolean) => boolean;
+    printPage?: () => boolean;
+  };
+  __handleAndroidBack?: () => string;
 }
 
-interface CementPreset {
-  id: string;
-  name: string;
-  bagKg: number;
-}
-
-const bucketCapacityFromExcel = 25.319665991606939;
-
-const mixPresets: MixPreset[] = [
-  { key: 'H-140', fcMpa: 13.73, cementKgM3: 250, sandBucketsM3: 20, gravelBucketsM3: 28, waterMinLM3: 140, waterMaxLM3: 150 },
-  { key: 'H-180', fcMpa: 17.65, cementKgM3: 300, sandBucketsM3: 21.6, gravelBucketsM3: 28.8, waterMinLM3: 156, waterMaxLM3: 168 },
-  { key: 'H-210', fcMpa: 21, cementKgM3: 350, sandBucketsM3: 22.4, gravelBucketsM3: 28, waterMinLM3: 175, waterMaxLM3: 189 },
-  { key: 'H-240', fcMpa: 23.54, cementKgM3: 400, sandBucketsM3: 22.4, gravelBucketsM3: 32, waterMinLM3: 184, waterMaxLM3: 200 },
-  { key: 'H-280', fcMpa: 27.46, cementKgM3: 450, sandBucketsM3: 21.6, gravelBucketsM3: 32.4, waterMinLM3: 189, waterMaxLM3: 207 },
-  { key: 'H-300', fcMpa: 29.42, cementKgM3: 475, sandBucketsM3: 22.8, gravelBucketsM3: 30.4, waterMinLM3: 195, waterMaxLM3: 214 },
-  { key: 'H-350', fcMpa: 34.32, cementKgM3: 500, sandBucketsM3: 20, gravelBucketsM3: 32, waterMinLM3: 190, waterMaxLM3: 210 },
+const WORK_MODULES = [
+  { id: 'dashboard', label: 'Panel General', shortLabel: 'Panel', icon: LayoutDashboard },
+  { id: 'quick-site', label: 'Dosificación en Obra', shortLabel: 'Obra', icon: Calculator },
+  { id: 'project-info', label: 'Datos de Obra', shortLabel: 'Datos', icon: FileText },
+  { id: 'materials', label: 'Materiales y Aditivos', shortLabel: 'Materiales', icon: Box },
+  { id: 'sieve', label: 'Granulometría (Fuller)', shortLabel: 'Tamices', icon: Filter },
+  { id: 'dosing', label: 'Diseño ACI y Volumen', shortLabel: 'Diseño ACI', icon: Layers },
+  { id: 'final-mix', label: 'Mezcla Final y Humedad', shortLabel: 'Mezcla', icon: Scale },
+  { id: 'strength-curve', label: 'Regresión Resistencia', shortLabel: 'Regresión', icon: TrendingUp },
+  { id: 'strength-control', label: 'Control Estadístico', shortLabel: 'Control', icon: ClipboardCheck },
 ];
 
-const cementPresets: CementPreset[] = [
-  { id: 'holcim-fuerte-gu', name: 'Holcim Fuerte Tipo GU', bagKg: 50 },
-  { id: 'cemento-50', name: 'Cemento funda 50 kg', bagKg: 50 },
-  { id: 'cemento-42-5', name: 'Cemento funda 42.5 kg', bagKg: 42.5 },
-  { id: 'cemento-25', name: 'Cemento funda 25 kg', bagKg: 25 },
-  { id: 'custom', name: 'Otro cemento', bagKg: 50 },
+const OUTPUT_MODULES = [
+  { id: 'report', label: 'Reporte Técnico', icon: FileDown },
+  { id: 'history', label: 'Gestor de Proyectos', icon: History },
+  { id: 'docs', label: 'Base Normativa', icon: BookOpen },
+  { id: 'settings', label: 'Configuración', icon: Settings },
 ];
 
-const clampNumber = (value: number, min: number, max: number) => {
-  if (!Number.isFinite(value)) return min;
-  return Math.min(max, Math.max(min, value));
-};
+export function App() {
+  const {
+    settings,
+    designs,
+    activeDesignId,
+    activeTab,
+    darkMode,
+    currentDesign,
+    setActiveDesignId,
+    setActiveTab,
+    handleNewProject,
+    deleteDesign,
+    handleDuplicateDesign,
+    handleImportDesigns,
+    handleSettingsChange,
+    applySettingsToCurrentDesign,
+    handleUpdate,
+    handleSieveUpdate,
+    toggleDarkMode,
+  } = useConcreteWorkspace();
 
-const formatNumber = (value: number, digits = 2) => (
-  new Intl.NumberFormat('es-EC', {
-    minimumFractionDigits: 0,
-    maximumFractionDigits: digits,
-  }).format(Number.isFinite(value) ? value : 0)
-);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
+  const [fileMenuOpen, setFileMenuOpen] = useState(false);
+  const [toastMsg, setToastMsg] = useState<string | null>(null);
+  const [cookieAccepted, setCookieAccepted] = useState<boolean>(() => {
+    try {
+      return localStorage.getItem('concrete_cookie_consent_v2') === 'accepted';
+    } catch {
+      return true;
+    }
+  });
 
-function App() {
-  const [darkMode, setDarkMode] = useState(false);
-  const [strength, setStrength] = useState<StrengthKey>('H-210');
-  const [volumeM3, setVolumeM3] = useState(6.4);
-  const [wastePercent, setWastePercent] = useState(0);
-  const [bucketLiters, setBucketLiters] = useState(bucketCapacityFromExcel);
-  const [cementId, setCementId] = useState(cementPresets[0].id);
-  const [customCementName, setCustomCementName] = useState('Mi cemento');
-  const [customBagKg, setCustomBagKg] = useState(50);
+  const fileMenuRef = useRef<HTMLDivElement>(null);
+  const importJsonRef = useRef<HTMLInputElement>(null);
+  const mainScrollRef = useRef<HTMLElement>(null);
 
-  const selectedMix = mixPresets.find((mix) => mix.key === strength) ?? mixPresets[2];
-  const selectedCementPreset = cementPresets.find((cement) => cement.id === cementId) ?? cementPresets[0];
-  const selectedCement = {
-    name: cementId === 'custom' ? customCementName.trim() || 'Otro cemento' : selectedCementPreset.name,
-    bagKg: clampNumber(cementId === 'custom' ? customBagKg : selectedCementPreset.bagKg, 1, 100),
+  const showToast = (msg: string) => {
+    setToastMsg(msg);
   };
 
-  const results = useMemo(() => {
-    const safeVolume = clampNumber(volumeM3, 0, 100000);
-    const safeWastePercent = clampNumber(wastePercent, 0, 50);
-    const safeBucketLiters = clampNumber(bucketLiters, 1, 80);
-    const factor = 1 + safeWastePercent / 100;
-    const totalVolume = safeVolume * factor;
-    const bagsM3 = selectedMix.cementKgM3 / selectedCement.bagKg;
-    const cementKg = selectedMix.cementKgM3 * totalVolume;
-    const bagsExact = cementKg / selectedCement.bagKg;
-    const bagsToBuy = Math.ceil(bagsExact);
-    const sandBuckets = selectedMix.sandBucketsM3 * totalVolume;
-    const gravelBuckets = selectedMix.gravelBucketsM3 * totalVolume;
-    const sandLiters = sandBuckets * safeBucketLiters;
-    const gravelLiters = gravelBuckets * safeBucketLiters;
-    const waterMin = selectedMix.waterMinLM3 * totalVolume;
-    const waterMax = selectedMix.waterMaxLM3 * totalVolume;
+  useEffect(() => {
+    if (!toastMsg) return;
+    const timer = window.setTimeout(() => setToastMsg(null), 3200);
+    return () => window.clearTimeout(timer);
+  }, [toastMsg]);
 
-    return {
-      bagsM3,
-      bagsExact,
-      bagsToBuy,
-      cementKg,
-      gravelBuckets,
-      gravelLiters,
-      gravelM3: gravelLiters / 1000,
-      sandBuckets,
-      sandLiters,
-      sandM3: sandLiters / 1000,
-      totalVolume,
-      waterMin,
-      waterMax,
-      waterMinPerBag: bagsM3 > 0 ? selectedMix.waterMinLM3 / bagsM3 : 0,
-      waterMaxPerBag: bagsM3 > 0 ? selectedMix.waterMaxLM3 / bagsM3 : 0,
-      sandBucketsPerBag: bagsM3 > 0 ? selectedMix.sandBucketsM3 / bagsM3 : 0,
-      gravelBucketsPerBag: bagsM3 > 0 ? selectedMix.gravelBucketsM3 / bagsM3 : 0,
+  useEffect(() => {
+    const preloader = document.getElementById('preloader');
+    if (preloader) {
+      preloader.classList.add('hide');
+      window.setTimeout(() => preloader.remove(), 350);
+    }
+  }, []);
+
+  useEffect(() => {
+    const handleOutside = (e: MouseEvent) => {
+      if (fileMenuRef.current && !fileMenuRef.current.contains(e.target as Node)) {
+        setFileMenuOpen(false);
+      }
     };
-  }, [bucketLiters, selectedCement.bagKg, selectedMix, volumeM3, wastePercent]);
+    if (fileMenuOpen) {
+      document.addEventListener('mousedown', handleOutside);
+    }
+    return () => document.removeEventListener('mousedown', handleOutside);
+  }, [fileMenuOpen]);
+
+  // Android hardware back button integration
+  useEffect(() => {
+    (window as AndroidBridgeWindow).__handleAndroidBack = () => {
+      if (mobileSidebarOpen) {
+        setMobileSidebarOpen(false);
+        return 'handled';
+      }
+      if (fileMenuOpen) {
+        setFileMenuOpen(false);
+        return 'handled';
+      }
+      if (activeTab !== 'dashboard') {
+        setActiveTab('dashboard');
+        return 'handled';
+      }
+      return 'exit';
+    };
+  }, [mobileSidebarOpen, fileMenuOpen, activeTab, setActiveTab]);
+
+  // Computed metrics for active ConcreteDesign
+  const designMetrics = useMemo(
+    () => calculateConcreteDesignMetrics(currentDesign),
+    [currentDesign]
+  );
+
+  const designWarnings = useMemo(
+    () => validateConcreteDesign(currentDesign),
+    [currentDesign]
+  );
+
+  const criticalWarnings = useMemo(
+    () => designWarnings.filter((w) => w.severity === 'danger').length,
+    [designWarnings]
+  );
+
+  const recommendedRegression = useMemo(() => {
+    const all = fitAllStrengthRegressions(
+      currentDesign.strengthRegression.testData,
+      currentDesign.designRequirements.workStrengthKgCm2,
+      currentDesign.strengthRegression.config.predictionAges
+    );
+    return getBestStrengthRegression(all);
+  }, [currentDesign]);
+
+  const regression28 = useMemo(
+    () => recommendedRegression.predictions.find((p) => p.ageDays === 28),
+    [recommendedRegression]
+  );
+
+  const strengthControlResult = useMemo(
+    () =>
+      calculateStrengthControl(
+        currentDesign.strengthControl.samples,
+        currentDesign.designRequirements.workStrengthKgCm2,
+        currentDesign.strengthControl.evaluationAge
+      ),
+    [currentDesign]
+  );
+
+  const selectModule = (tabId: string) => {
+    setActiveTab(tabId);
+    setMobileSidebarOpen(false);
+    setFileMenuOpen(false);
+    mainScrollRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handleToggleSidebar = () => {
+    if (window.innerWidth <= 1024) {
+      setMobileSidebarOpen((v) => !v);
+    } else {
+      setSidebarCollapsed((v) => !v);
+    }
+  };
+
+  const handleExportJSON = (targetDesign?: ConcreteDesign) => {
+    const payload = targetDesign ? targetDesign : designs;
+    const json = JSON.stringify(payload, null, 2);
+    const filename = targetDesign
+      ? `Hormigon_${targetDesign.projectInfo.projectName.replace(/\s+/g, '_')}.json`
+      : `Proyectos_Hormigon_${new Date().toISOString().slice(0, 10)}.json`;
+
+    const bridge = (window as AndroidBridgeWindow).AndroidBridge;
+    if (bridge?.saveExportFile) {
+      bridge.saveExportFile(json, filename, 'application/json', false);
+      showToast('Archivo JSON exportado');
+      return;
+    }
+
+    const blob = new Blob([json], { type: 'application/json;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    a.click();
+    URL.revokeObjectURL(url);
+    showToast('Archivo JSON exportado');
+  };
+
+  const handleImportJSONFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    try {
+      const text = await file.text();
+      const parsed = JSON.parse(text) as ConcreteDesign | ConcreteDesign[];
+      handleImportDesigns(Array.isArray(parsed) ? parsed : [parsed]);
+      showToast('Proyecto(s) importado(s) correctamente');
+    } catch {
+      showToast('Error al leer archivo JSON');
+    }
+    e.target.value = '';
+  };
+
+  const handleGeneratePDF = () => {
+    generateConcretePDF(currentDesign);
+    showToast('Reporte PDF generado');
+    setFileMenuOpen(false);
+  };
+
+  const handleExportExcel = () => {
+    exportConcreteExcel(currentDesign);
+    showToast('Hoja de cálculo XLS exportada');
+    setFileMenuOpen(false);
+  };
+
+  const handlePrint = () => {
+    setFileMenuOpen(false);
+    const bridge = (window as AndroidBridgeWindow).AndroidBridge;
+    if (bridge?.printPage) {
+      bridge.printPage();
+      return;
+    }
+    window.print();
+  };
+
+  const handleAcceptCookies = () => {
+    setCookieAccepted(true);
+    try {
+      localStorage.setItem('concrete_cookie_consent_v2', 'accepted');
+    } catch {
+      // ignore
+    }
+  };
 
   return (
-    <div className={darkMode ? 'dark' : ''}>
-      <main className="app-shell">
-        <header className="app-header">
-          <div className="brand-block">
-            <div className="brand-mark" aria-hidden="true">
-              <Hash size={24} />
-            </div>
-            <div>
-              <p className="eyebrow">Creado por Paul R</p>
-              <h1>Calculadora de hormigon</h1>
-              <p className="header-copy">Calcula fundas de cemento, arena, grava y agua para un volumen de obra.</p>
-            </div>
-          </div>
-          <button
-            className="icon-button"
-            type="button"
-            onClick={() => setDarkMode((current) => !current)}
-            title={darkMode ? 'Usar modo claro' : 'Usar modo oscuro'}
-          >
-            {darkMode ? <Sun size={20} /> : <Moon size={20} />}
-          </button>
-        </header>
+    <div className={`suite-app-root ${darkMode ? 'dark' : ''}`}>
+      {/* Hidden JSON importer */}
+      <input
+        ref={importJsonRef}
+        type="file"
+        accept="application/json,.json"
+        className="hidden"
+        onChange={handleImportJSONFile}
+      />
 
-        <section className="calculator-grid" aria-label="Calculadora principal">
-          <form className="tool-panel" onSubmit={(event) => event.preventDefault()}>
-            <div className="section-heading">
-              <Calculator size={22} aria-hidden="true" />
-              <div>
-                <p className="eyebrow">Entradas</p>
-                <h2>Datos de la mezcla</h2>
+      {/* TOPBAR */}
+      <header className="topbar" role="banner">
+        <div className="topbar-left">
+          <button
+            type="button"
+            className="topbar-icon-btn"
+            onClick={handleToggleSidebar}
+            title="Alternar panel lateral"
+            aria-label="Alternar panel lateral"
+          >
+            {sidebarCollapsed ? <PanelLeftOpen size={18} /> : <PanelLeftClose size={18} />}
+          </button>
+
+          {/* Archivo Dropdown */}
+          <div className="file-dropdown" ref={fileMenuRef}>
+            <button
+              type="button"
+              className={`topbar-file-btn ${fileMenuOpen ? 'active' : ''}`}
+              onClick={() => setFileMenuOpen((v) => !v)}
+              aria-expanded={fileMenuOpen}
+            >
+              <FolderOpen size={15} />
+              <span>Archivo</span>
+              <ChevronDown size={13} className={fileMenuOpen ? 'chevron-open' : ''} />
+            </button>
+
+            {fileMenuOpen && (
+              <div className="dropdown-menu-pro" role="menu">
+                <button
+                  type="button"
+                  className="dropdown-item-pro strong"
+                  onClick={() => {
+                    handleNewProject();
+                    setFileMenuOpen(false);
+                    showToast('Nuevo proyecto creado');
+                  }}
+                >
+                  <Plus size={15} />
+                  <span>Nuevo Proyecto ACI</span>
+                </button>
+                <button
+                  type="button"
+                  className="dropdown-item-pro"
+                  onClick={() => selectModule('quick-site')}
+                >
+                  <Calculator size={15} />
+                  <span>Dosificación Rápida en Obra (Holcim)</span>
+                </button>
+                <button
+                  type="button"
+                  className="dropdown-item-pro"
+                  onClick={() => selectModule('history')}
+                >
+                  <History size={15} />
+                  <span>Gestor de Proyectos ({designs.length})</span>
+                </button>
+                <button
+                  type="button"
+                  className="dropdown-item-pro"
+                  onClick={() => {
+                    setFileMenuOpen(false);
+                    importJsonRef.current?.click();
+                  }}
+                >
+                  <Upload size={15} />
+                  <span>Importar Proyecto (.JSON)...</span>
+                </button>
+
+                <div className="dropdown-divider-pro" />
+
+                <button
+                  type="button"
+                  className="dropdown-item-pro"
+                  onClick={() => {
+                    setFileMenuOpen(false);
+                    handleExportJSON(currentDesign);
+                  }}
+                >
+                  <FileJson size={15} />
+                  <span>Guardar Proyecto (.JSON)</span>
+                </button>
+                <button type="button" className="dropdown-item-pro" onClick={handleGeneratePDF}>
+                  <FileDown size={15} className="icon-danger" />
+                  <span>Reporte Técnico (.PDF)</span>
+                </button>
+                <button type="button" className="dropdown-item-pro" onClick={handleExportExcel}>
+                  <FileSpreadsheet size={15} className="icon-success" />
+                  <span>Hoja de Cálculo (.XLS)</span>
+                </button>
+                <button type="button" className="dropdown-item-pro" onClick={handlePrint}>
+                  <Printer size={15} />
+                  <span>Imprimir / Guardar Vista PDF</span>
+                </button>
+
+                <div className="dropdown-divider-pro" />
+
+                <a className="dropdown-item-pro" href="/cookies.html" onClick={() => setFileMenuOpen(false)}>
+                  <ShieldCheck size={15} />
+                  <span>Política de Datos y Cookies</span>
+                </a>
+                <a className="dropdown-item-pro" href="/contacto.html" onClick={() => setFileMenuOpen(false)}>
+                  <Activity size={15} />
+                  <span>Contacto y Soporte</span>
+                </a>
+              </div>
+            )}
+          </div>
+
+          <div className="topbar-divider hide-xs" />
+
+          <button
+            type="button"
+            className="project-title-trigger"
+            onClick={() => selectModule('project-info')}
+            title="Editar datos del proyecto activo"
+          >
+            <span className="project-name-text">
+              {currentDesign.projectInfo.projectName || 'Diseño de Hormigón'}
+            </span>
+            <span className="project-meta-pill">
+              f&apos;c {currentDesign.designRequirements.workStrengthKgCm2} kg/cm² · A/C{' '}
+              {designMetrics.waterCementRatio.toFixed(2)}
+            </span>
+          </button>
+
+          <span className="save-status-pill visible">
+            <CloudCheck size={14} />
+            <span>Local</span>
+          </span>
+        </div>
+
+        <div className="topbar-menu">
+          <button
+            type="button"
+            className="topbar-item desktop-only-btn"
+            onClick={() => selectModule('quick-site')}
+            title="Dosificación Rápida en Obra (Holcim)"
+          >
+            <Calculator size={15} />
+            <span className="topbar-item-label">Obra</span>
+          </button>
+
+          <button
+            type="button"
+            className="topbar-item desktop-only-btn"
+            onClick={handleGeneratePDF}
+            title="Exportar Reporte Técnico PDF"
+          >
+            <Download size={15} />
+            <span className="topbar-item-label">PDF</span>
+          </button>
+
+          <button
+            type="button"
+            className="topbar-icon-btn"
+            onClick={toggleDarkMode}
+            title={darkMode ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro'}
+            aria-label={darkMode ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro'}
+          >
+            {darkMode ? <Sun size={16} /> : <Moon size={16} />}
+          </button>
+
+          <button
+            type="button"
+            className={`topbar-icon-btn ${activeTab === 'settings' ? 'active' : ''}`}
+            onClick={() => selectModule('settings')}
+            title="Configuración"
+            aria-label="Configuración"
+          >
+            <SlidersHorizontal size={16} />
+          </button>
+        </div>
+      </header>
+
+      {/* APP CONTAINER: SIDEBAR + MAIN CONTENT */}
+      <div className="app-container">
+        {mobileSidebarOpen && (
+          <div
+            className="sidebar-overlay"
+            onClick={() => setMobileSidebarOpen(false)}
+            aria-hidden="true"
+          />
+        )}
+
+        <aside
+          className={`sidebar ${sidebarCollapsed ? 'collapsed' : ''} ${
+            mobileSidebarOpen ? 'show-mobile' : ''
+          }`}
+          aria-label="Navegación principal"
+        >
+          <div className="sidebar-header">
+            <div className="sidebar-brand">
+              <div className="brand-icon" aria-hidden="true">
+                <span className="brand-symbol">H</span>
+              </div>
+              <div className="sidebar-brand-text">
+                <h1 className="sidebar-title">{APP_NAME}</h1>
+                <div className="sidebar-version-row">
+                  <span className="sidebar-version-badge">{APP_VERSION_LABEL}</span>
+                  <span className="sidebar-suite-tag">{SUITE_NAME}</span>
+                </div>
+                <div className="sidebar-author">Creado por {SITE_AUTHOR}</div>
+              </div>
+            </div>
+            <button
+              type="button"
+              className="sidebar-close-mobile"
+              onClick={() => setMobileSidebarOpen(false)}
+              aria-label="Cerrar menú"
+            >
+              <X size={18} />
+            </button>
+          </div>
+
+          <div className="sidebar-body custom-scrollbar">
+            <div className="nav-section-title">Módulos de Diseño</div>
+            <nav className="sidebar-nav">
+              {WORK_MODULES.map((item) => {
+                const Icon = item.icon;
+                const isActive = activeTab === item.id;
+                return (
+                  <button
+                    key={item.id}
+                    type="button"
+                    className={`nav-link-custom ${isActive ? 'active' : ''}`}
+                    onClick={() => selectModule(item.id)}
+                  >
+                    <Icon size={17} />
+                    <span>{item.label}</span>
+                  </button>
+                );
+              })}
+            </nav>
+
+            <div className="nav-section-title">Reportes y Gestión</div>
+            <nav className="sidebar-nav">
+              {OUTPUT_MODULES.map((item) => {
+                const Icon = item.icon;
+                const isActive = activeTab === item.id;
+                return (
+                  <button
+                    key={item.id}
+                    type="button"
+                    className={`nav-link-custom ${isActive ? 'active' : ''}`}
+                    onClick={() => selectModule(item.id)}
+                  >
+                    <Icon size={17} />
+                    <span>{item.label}</span>
+                  </button>
+                );
+              })}
+            </nav>
+
+            <div className="nav-section-title">Resumen Técnico Activo</div>
+            <div className="sidebar-panel-box">
+              <div className="sidebar-metric-line">
+                <span>Resistencia f&apos;c</span>
+                <strong>{currentDesign.designRequirements.workStrengthKgCm2} kg/cm²</strong>
+              </div>
+              <div className="sidebar-metric-line">
+                <span>f&apos;cr diseño</span>
+                <strong>{designMetrics.fcrMPa.toFixed(2)} MPa</strong>
+              </div>
+              <div className="sidebar-metric-line">
+                <span>Relación A/C</span>
+                <strong>{designMetrics.waterCementRatio.toFixed(3)}</strong>
+              </div>
+              <div className="sidebar-metric-line">
+                <span>Cemento / Agua</span>
+                <strong>
+                  {designMetrics.cementKg.toFixed(0)} / {designMetrics.waterKg.toFixed(0)} kg/m³
+                </strong>
+              </div>
+              <div className="sidebar-actions-grid">
+                <button type="button" className="sidebar-tool-btn primary" onClick={handleGeneratePDF}>
+                  <FileDown size={14} /> Exportar PDF
+                </button>
+                <button type="button" className="sidebar-tool-btn" onClick={handleExportExcel}>
+                  <FileSpreadsheet size={14} /> Exportar XLS
+                </button>
               </div>
             </div>
 
-            <label className="field-group">
-              <span>Tipo de cemento</span>
-              <select className="field-control" value={cementId} onChange={(event) => setCementId(event.target.value)}>
-                {cementPresets.map((cement) => (
-                  <option key={cement.id} value={cement.id}>{cement.name}</option>
+            <div className="sidebar-panel-box suite-ecosystem-mini">
+              <div className="suite-ecosystem-head">
+                <Layers size={14} />
+                <strong>{SUITE_NAME}</strong>
+              </div>
+              <div className="suite-ecosystem-items">
+                {SUITE_APPS.map((app) => (
+                  <span
+                    key={app.id}
+                    className={`suite-pill ${app.current ? 'active-app' : ''}`}
+                    title={app.tagline}
+                  >
+                    {app.name}
+                  </span>
                 ))}
-              </select>
-            </label>
+              </div>
+            </div>
+          </div>
+        </aside>
 
-            {cementId === 'custom' && (
-              <label className="field-group">
-                <span>Nombre del cemento</span>
-                <input
-                  className="field-control"
-                  value={customCementName}
-                  onChange={(event) => setCustomCementName(event.target.value)}
-                  type="text"
-                />
-              </label>
+        {/* MAIN CONTENT */}
+        <main className="main-content custom-scrollbar" ref={mainScrollRef}>
+          <div className="module-page-container">
+            {activeTab === 'dashboard' && (
+              <DashboardPage
+                currentDesign={currentDesign}
+                designs={designs}
+                activeDesignId={activeDesignId}
+                designMetrics={designMetrics}
+                recommendedRegression={recommendedRegression}
+                regression28={regression28}
+                strengthControlResult={strengthControlResult}
+                designWarnings={designWarnings}
+                criticalWarnings={criticalWarnings}
+                warningCount={designWarnings.length}
+                setActiveTab={selectModule}
+                setActiveDesignId={setActiveDesignId}
+                handleNewProject={handleNewProject}
+                deleteDesign={deleteDesign}
+              />
             )}
 
-            <div className="input-pair">
-              <label className="field-group">
-                <span>Resistencia</span>
-                <select className="field-control" value={strength} onChange={(event) => setStrength(event.target.value as StrengthKey)}>
-                  {mixPresets.map((mix) => (
-                    <option key={mix.key} value={mix.key}>{mix.key} - {formatNumber(mix.fcMpa, 2)} MPa</option>
-                  ))}
-                </select>
-              </label>
-
-              <label className="field-group">
-                <span>Peso por funda</span>
-                <input
-                  className="field-control"
-                  min="1"
-                  max="100"
-                  step="0.5"
-                  value={selectedCement.bagKg}
-                  onChange={(event) => {
-                    setCementId('custom');
-                    setCustomBagKg(Number(event.target.value));
-                  }}
-                  type="number"
-                />
-              </label>
-            </div>
-
-            <div className="input-pair">
-              <label className="field-group">
-                <span>Volumen de hormigon</span>
-                <input
-                  className="field-control"
-                  min="0"
-                  step="0.01"
-                  value={volumeM3}
-                  onChange={(event) => setVolumeM3(Number(event.target.value))}
-                  type="number"
-                />
-              </label>
-
-              <label className="field-group">
-                <span>Desperdicio (%)</span>
-                <input
-                  className="field-control"
-                  min="0"
-                  max="50"
-                  step="1"
-                  value={wastePercent}
-                  onChange={(event) => setWastePercent(Number(event.target.value))}
-                  type="number"
-                />
-              </label>
-            </div>
-
-            <label className="field-group">
-              <span>Capacidad del balde (L)</span>
-              <input
-                className="field-control"
-                min="1"
-                max="80"
-                step="0.01"
-                value={bucketLiters}
-                onChange={(event) => setBucketLiters(Number(event.target.value))}
-                type="number"
+            {activeTab === 'quick-site' && (
+              <QuickFieldDosage
+                onApplyToAciDesign={(fcKgCm2, cementName) => {
+                  handleUpdate('designRequirements.workStrengthKgCm2', fcKgCm2);
+                  handleUpdate('designRequirements.cementType', cementName);
+                  showToast(`f'c = ${fcKgCm2} kg/cm² aplicado al Diseño ACI`);
+                  selectModule('dosing');
+                }}
               />
-            </label>
+            )}
 
-            <div className="source-note">
-              Base tomada del Excel Holcim: balde promedio de {formatNumber(bucketCapacityFromExcel, 2)} L y dosificaciones H-140 a H-350.
-            </div>
-          </form>
+            {activeTab === 'project-info' && (
+              <ProjectInfoForm
+                projectInfo={currentDesign.projectInfo}
+                designRequirements={currentDesign.designRequirements}
+                materials={currentDesign.materials}
+                onChange={handleUpdate}
+              />
+            )}
 
-          <section className="summary-panel" aria-label="Resultados principales">
-            <div className="section-heading">
-              <ClipboardCheck size={22} aria-hidden="true" />
-              <div>
-                <p className="eyebrow">Resultado</p>
-                <h2>{selectedCement.name}</h2>
+            {activeTab === 'materials' && (
+              <div className="space-y-8">
+                <CoreMaterials materials={currentDesign.materials} />
+                <MaterialPropertiesForm materials={currentDesign.materials} onChange={handleUpdate} />
+                <AdditivesManager design={currentDesign} onChange={handleUpdate} />
               </div>
-            </div>
+            )}
 
-            <div className="hero-result">
-              <p>Fundas a comprar</p>
-              <strong>{formatNumber(results.bagsToBuy, 0)}</strong>
-              <span>{formatNumber(results.bagsExact, 2)} fundas exactas para {formatNumber(results.totalVolume, 2)} m3</span>
-            </div>
+            {activeTab === 'sieve' && (
+              <SieveAnalysis
+                sieveData={currentDesign.sieveAnalysis}
+                nominalMaxSizeIn={currentDesign.designRequirements.nominalMaxSizeIn}
+                onChange={handleSieveUpdate}
+              />
+            )}
 
-            <div className="result-grid">
-              <ResultTile icon={<Scale size={20} />} label="Cemento" value={`${formatNumber(results.cementKg, 0)} kg`} detail={`${formatNumber(results.bagsM3, 2)} fundas/m3`} />
-              <ResultTile icon={<Shovel size={20} />} label="Arena" value={`${formatNumber(results.sandBuckets, 2)} baldes`} detail={`${formatNumber(results.sandM3, 2)} m3`} />
-              <ResultTile icon={<Package size={20} />} label="Grava" value={`${formatNumber(results.gravelBuckets, 2)} baldes`} detail={`${formatNumber(results.gravelM3, 2)} m3`} />
-              <ResultTile icon={<Droplet size={20} />} label="Agua" value={`${formatNumber(results.waterMin, 0)} - ${formatNumber(results.waterMax, 0)} L`} detail="Agregar poco a poco" />
-            </div>
-          </section>
-        </section>
-
-        <section className="detail-grid">
-          <div className="tool-panel">
-            <div className="section-heading">
-              <Package size={22} aria-hidden="true" />
-              <div>
-                <p className="eyebrow">Por funda</p>
-                <h2>Referencia rapida</h2>
+            {activeTab === 'dosing' && (
+              <div className="space-y-8">
+                <StrengthDesign designRequirements={currentDesign.designRequirements} />
+                <WaterCementDesign design={currentDesign} />
+                <AbsoluteVolume design={currentDesign} onChange={handleUpdate} />
               </div>
-            </div>
-            <div className="quick-list">
-              <QuickRow label="Arena" value={`${formatNumber(results.sandBucketsPerBag, 2)} baldes`} />
-              <QuickRow label="Grava" value={`${formatNumber(results.gravelBucketsPerBag, 2)} baldes`} />
-              <QuickRow label="Agua" value={`${formatNumber(results.waterMinPerBag, 1)} - ${formatNumber(results.waterMaxPerBag, 1)} L`} />
-              <QuickRow label="Cemento" value={`${formatNumber(selectedCement.bagKg, 1)} kg`} />
-            </div>
-          </div>
+            )}
 
-          <div className="tool-panel">
-            <div className="section-heading">
-              <FileText size={22} aria-hidden="true" />
-              <div>
-                <p className="eyebrow">Control</p>
-                <h2>Notas de obra</h2>
+            {activeTab === 'final-mix' && (
+              <div className="space-y-8">
+                <CoreDosing design={currentDesign} />
+                <FinalMix design={currentDesign} onChange={handleUpdate} />
               </div>
-            </div>
-            <ul className="notes-list">
-              <li>La dosificacion es referencial y debe ajustarse con humedad real de arena y grava.</li>
-              <li>No agregues toda el agua al inicio; corrige segun trabajabilidad.</li>
-              <li>Antes de vaciar en obra, valida la mezcla con una prueba corta.</li>
-            </ul>
+            )}
+
+            {activeTab === 'strength-curve' && (
+              <StrengthCurve
+                designRequirements={currentDesign.designRequirements}
+                regression={currentDesign.strengthRegression}
+                onChange={handleUpdate}
+              />
+            )}
+
+            {activeTab === 'strength-control' && (
+              <StrengthControl
+                designRequirements={currentDesign.designRequirements}
+                control={currentDesign.strengthControl}
+                onChange={handleUpdate}
+              />
+            )}
+
+            {activeTab === 'report' && (
+              <ReportPage
+                design={currentDesign}
+                onGeneratePDF={handleGeneratePDF}
+                onExportExcel={handleExportExcel}
+              />
+            )}
+
+            {activeTab === 'history' && (
+              <HistoryPage
+                designs={designs}
+                activeDesignId={activeDesignId}
+                onSelect={(id) => {
+                  setActiveDesignId(id);
+                  selectModule('dashboard');
+                }}
+                onDuplicate={handleDuplicateDesign}
+                onDelete={deleteDesign}
+                onImport={handleImportDesigns}
+                onExport={handleExportJSON}
+              />
+            )}
+
+            {activeTab === 'docs' && <TechnicalDocumentation />}
+
+            {activeTab === 'settings' && (
+              <SettingsPage
+                settings={settings}
+                onChange={handleSettingsChange}
+                onApplyDefaults={() => {
+                  applySettingsToCurrentDesign();
+                  showToast('Preferencias aplicadas al diseño activo');
+                }}
+              />
+            )}
+
+            <Footer onSelectTab={selectModule} />
           </div>
-        </section>
+        </main>
+      </div>
 
-        <section className="table-panel" aria-label="Tabla base de dosificacion">
-          <div className="section-heading">
-            <FileText size={22} aria-hidden="true" />
-            <div>
-              <p className="eyebrow">Tabla base</p>
-              <h2>Dosificacion por 1 m3</h2>
-            </div>
+      {/* MOBILE / TABLET BOTTOM NAVIGATION BAR */}
+      <nav className="mobile-bottom-nav" aria-label="Navegación rápida inferior">
+        <button
+          type="button"
+          className={`mobile-nav-item ${activeTab === 'dashboard' ? 'active' : ''}`}
+          onClick={() => selectModule('dashboard')}
+        >
+          <LayoutDashboard size={17} />
+          <span>Panel</span>
+        </button>
+        <button
+          type="button"
+          className={`mobile-nav-item ${activeTab === 'quick-site' ? 'active' : ''}`}
+          onClick={() => selectModule('quick-site')}
+        >
+          <Calculator size={17} />
+          <span>Obra</span>
+        </button>
+        <button
+          type="button"
+          className={`mobile-nav-item ${activeTab === 'materials' ? 'active' : ''}`}
+          onClick={() => selectModule('materials')}
+        >
+          <Box size={17} />
+          <span>Materiales</span>
+        </button>
+        <button
+          type="button"
+          className={`mobile-nav-item ${activeTab === 'final-mix' || activeTab === 'dosing' ? 'active' : ''}`}
+          onClick={() => selectModule('final-mix')}
+        >
+          <Scale size={17} />
+          <span>Mezcla</span>
+        </button>
+        <button
+          type="button"
+          className={`mobile-nav-item ${activeTab === 'report' ? 'active' : ''}`}
+          onClick={() => selectModule('report')}
+        >
+          <FileDown size={17} />
+          <span>Reporte</span>
+        </button>
+        <button
+          type="button"
+          className={`mobile-nav-item ${mobileSidebarOpen ? 'active' : ''}`}
+          onClick={() => setMobileSidebarOpen((v) => !v)}
+        >
+          <Menu size={17} />
+          <span>Menú</span>
+        </button>
+      </nav>
+
+      {/* TOAST NOTIFICATION */}
+      {toastMsg && (
+        <div className="app-toast-pro" role="status" aria-live="polite">
+          {toastMsg}
+        </div>
+      )}
+
+      {/* COOKIE CONSENT BANNER */}
+      {!cookieAccepted && (
+        <aside className="cookie-banner" aria-label="Aviso de almacenamiento local">
+          <div className="cookie-banner-text">
+            <strong>Almacenamiento 100% Local</strong>
+            <p>
+              {APP_NAME} guarda tus diseños de mezcla, materiales y preferencias únicamente en tu dispositivo.
+            </p>
           </div>
-
-          <div className="table-scroll">
-            <table>
-              <thead>
-                <tr>
-                  <th>Resistencia</th>
-                  <th>f'c MPa</th>
-                  <th>Cemento kg/m3</th>
-                  <th>Fundas/m3</th>
-                  <th>Arena baldes</th>
-                  <th>Grava baldes</th>
-                  <th>Agua L/m3</th>
-                </tr>
-              </thead>
-              <tbody>
-                {mixPresets.map((mix) => {
-                  const bags = mix.cementKgM3 / selectedCement.bagKg;
-                  return (
-                    <tr key={mix.key} className={mix.key === strength ? 'active-row' : undefined}>
-                      <td>{mix.key}</td>
-                      <td>{formatNumber(mix.fcMpa, 2)}</td>
-                      <td>{formatNumber(mix.cementKgM3, 0)}</td>
-                      <td>{formatNumber(bags, 2)}</td>
-                      <td>{formatNumber(mix.sandBucketsM3, 2)}</td>
-                      <td>{formatNumber(mix.gravelBucketsM3, 2)}</td>
-                      <td>{formatNumber(mix.waterMinLM3, 0)} - {formatNumber(mix.waterMaxLM3, 0)}</td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
+          <div className="cookie-banner-actions">
+            <button type="button" className="pro-btn-primary !py-1.5 !px-3.5 text-xs" onClick={handleAcceptCookies}>
+              Entendido
+            </button>
           </div>
-        </section>
-      </main>
-    </div>
-  );
-}
-
-function ResultTile({ icon, label, value, detail }: { icon: ReactNode; label: string; value: string; detail: string }) {
-  return (
-    <div className="result-tile">
-      <div className="tile-icon" aria-hidden="true">{icon}</div>
-      <span>{label}</span>
-      <strong>{value}</strong>
-      <small>{detail}</small>
-    </div>
-  );
-}
-
-function QuickRow({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="quick-row">
-      <span>{label}</span>
-      <strong>{value}</strong>
+        </aside>
+      )}
     </div>
   );
 }

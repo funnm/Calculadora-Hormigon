@@ -1,14 +1,17 @@
 {
-  "name": "concrete-design-pro",
+  "name": "calculadora-hormigon",
   "private": true,
-  "version": "0.0.1",
+  "version": "2.0.0",
   "author": "Paul R",
   "type": "module",
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "android:sync": "node android/scripts/sync-web.mjs --build-web",
+    "android:build": "node android/scripts/build-apk.mjs",
+    "android:apk": "node android/scripts/sync-web.mjs --build-web && node android/scripts/build-apk.mjs"
   },
   "dependencies": {
     "jspdf": "^4.2.1",

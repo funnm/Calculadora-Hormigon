@@ -2,26 +2,117 @@
 <html lang="es">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-    <meta name="theme-color" content="#111111" />
-    <title>Calculadora de Hormigon | Paul R</title>
-    <meta name="description" content="Calculadora sencilla para estimar fundas de cemento, arena, grava y agua segun volumen de hormigon." />
-    <meta name="keywords" content="calculadora de hormigon, dosificacion de concreto, cemento, arena, grava, agua, Paul R" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="format-detection" content="telephone=no" />
     <meta name="author" content="Paul R" />
+    <meta name="application-version" content="2.0.0" />
     <meta name="robots" content="index, follow" />
     <meta name="language" content="es" />
+    <meta name="theme-color" content="#f5f5f7" />
+    <title>Calculadora de Hormigón | Engineering Suite Pro</title>
+    <meta
+      name="description"
+      content="Calculadora de Hormigón de Engineering Suite Pro: dosificación rápida en obra (Holcim H-140 a H-350), diseño técnico ACI 211.1 / ACI 318, granulometría NTE INEN 696, regresión y control estadístico 100% local y offline."
+    />
+    <meta
+      name="keywords"
+      content="calculadora de hormigon, Engineering Suite Pro, dosificacion de concreto, Holcim, ACI 211, ACI 318, granulometria Fuller, Paul R"
+    />
+    <link rel="manifest" href="/manifest.json" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="apple-touch-icon" href="/icons/icon-192.png" />
+
     <meta property="og:type" content="website" />
-    <meta property="og:site_name" content="Calculadora de Hormigon" />
+    <meta property="og:site_name" content="Engineering Suite Pro" />
     <meta property="og:locale" content="es_EC" />
-    <meta property="og:title" content="Calculadora de Hormigon" />
-    <meta property="og:description" content="Calcula cemento, arena, grava y agua para un volumen de hormigon." />
+    <meta property="og:title" content="Calculadora de Hormigón v2.0.0 | Engineering Suite Pro" />
+    <meta
+      property="og:description"
+      content="Dosificación de hormigón en obra (Holcim), diseño técnico ACI 211/318, granulometría, regresión y reportes PDF/Excel."
+    />
     <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:creator" content="Paul R" />
-    <meta name="twitter:title" content="Calculadora de Hormigon" />
-    <meta name="twitter:description" content="Calcula fundas de cemento, arena, grava y agua para obra." />
+    <meta name="twitter:title" content="Calculadora de Hormigón v2.0.0 | Engineering Suite Pro" />
+    <meta
+      name="twitter:description"
+      content="Dosificación de hormigón en obra (Holcim), diseño técnico ACI 211/318, granulometría, regresión y reportes PDF/Excel."
+    />
+
+    <script>
+      (function () {
+        try {
+          var saved = localStorage.getItem('concrete-dark-mode');
+          if (saved === 'true') {
+            document.documentElement.classList.add('dark');
+          }
+        } catch (e) {}
+      })();
+    </script>
+
+    <style>
+      #preloader {
+        position: fixed;
+        top: 0;
+        right: 0;
+        bottom: 0;
+        left: 0;
+        background-color: #f5f5f7;
+        color: #111113;
+        z-index: 9999;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        transition: opacity 0.35s ease, visibility 0.35s ease;
+      }
+      html.dark #preloader {
+        background-color: #09090b;
+        color: #f5f5f7;
+      }
+      #preloader.hide {
+        opacity: 0;
+        visibility: hidden;
+        pointer-events: none;
+      }
+      .preloader-mark {
+        width: 54px;
+        height: 54px;
+        border-radius: 16px;
+        background: #111113;
+        color: #ffffff;
+        display: grid;
+        place-items: center;
+        font-family: ui-monospace, monospace;
+        font-size: 26px;
+        font-weight: 900;
+        box-shadow: 0 14px 32px rgba(0, 0, 0, 0.16);
+      }
+      html.dark .preloader-mark {
+        background: #f5f5f7;
+        color: #111113;
+      }
+      .preloader-title {
+        margin: 10px 0 0;
+        font-size: 1.05rem;
+        font-weight: 800;
+      }
+      .preloader-sub {
+        margin: 4px 0 0;
+        font-size: 0.78rem;
+        opacity: 0.65;
+        font-weight: 600;
+      }
+    </style>
   </head>
   <body>
+    <div id="preloader" aria-hidden="true">
+      <div class="preloader-mark">H</div>
+      <p class="preloader-title">Calculadora de Hormigón</p>
+      <p class="preloader-sub">Engineering Suite Pro · Paul R</p>
+    </div>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>

@@ -19,6 +19,7 @@ import { ModuleStatusGrid } from './ModuleStatusGrid';
 import { DesignWarningsPanel } from './DesignWarningsPanel';
 import { ProjectSessionList } from './ProjectSessionList';
 import { TechnicalSequence } from './TechnicalSequence';
+import { SUITE_APPS, SUITE_NAME, SITE_AUTHOR } from '../../config/site';
 
 interface DashboardPageProps {
   currentDesign: ConcreteDesign;
@@ -88,13 +89,19 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
                 Estado integral del diseño: resistencia, A/C, cemento, volumen absoluto y alertas técnicas.
               </p>
             </div>
-            <div className="flex flex-col sm:flex-row gap-3">
+            <div className="flex flex-col sm:flex-row flex-wrap gap-3">
               <button
-                onClick={() => setActiveTab('project-info')}
+                onClick={() => setActiveTab('quick-site')}
                 className="bg-white text-slate-900 px-6 py-4 rounded-2xl font-black flex items-center justify-center gap-3 hover:bg-slate-100 transition-all active:scale-95 group"
               >
-                Datos de mezcla
+                Dosificación en Obra (Holcim)
                 <ArrowRight size={20} className="group-hover:translate-x-1 transition-transform" />
+              </button>
+              <button
+                onClick={() => setActiveTab('project-info')}
+                className="bg-white/15 text-white border border-white/15 px-6 py-4 rounded-2xl font-black flex items-center justify-center gap-2 hover:bg-white/25 transition-all active:scale-95"
+              >
+                Diseño Técnico ACI
               </button>
               <button
                 onClick={() => setActiveTab('strength-curve')}
@@ -178,6 +185,38 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
 
         <TechnicalSequence steps={sequenceSteps} onStepClick={setActiveTab} />
       </div>
+
+      {/* Engineering Suite Pro Ecosystem Card */}
+      <section className="pro-card space-y-4">
+        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 dark:border-slate-800 pb-3">
+          <div className="flex items-center gap-2">
+            <Layers size={18} className="text-accent" />
+            <h3 className="text-lg font-black text-slate-900 dark:text-white">Ecosistema {SUITE_NAME}</h3>
+          </div>
+          <span className="badge-pill">{SITE_AUTHOR} · Suite de Ingeniería</span>
+        </div>
+        <p className="text-sm text-slate-600 dark:text-slate-400">
+          {SUITE_NAME} reúne aplicaciones de ingeniería civil y matemática con diseño Apple Monochrome Pro unificado, cálculo 100% local offline y versión nativa para Android.
+        </p>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {SUITE_APPS.map((app) => (
+            <div
+              key={app.id}
+              className={`p-4 rounded-2xl border ${
+                app.current
+                  ? 'border-slate-900 dark:border-white bg-slate-50 dark:bg-slate-900/70'
+                  : 'border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/40'
+              }`}
+            >
+              <div className="flex items-center justify-between gap-2 mb-1.5">
+                <strong className="text-sm font-black text-slate-900 dark:text-white">{app.name}</strong>
+                <span className={`badge-pill ${app.current ? 'active-badge' : ''}`}>{app.badge}</span>
+              </div>
+              <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">{app.tagline}</p>
+            </div>
+          ))}
+        </div>
+      </section>
     </div>
   );
 };

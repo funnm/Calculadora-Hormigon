@@ -36,6 +36,12 @@ const renderTable = (title: string, rows: SheetCell[][]): string => `
   </table>
 `;
 
+interface AndroidBridgeWindow extends Window {
+  AndroidBridge?: {
+    saveExportFile?: (content: string, filename: string, mimeType: string, isBase64: boolean) => boolean;
+  };
+}
+
 const downloadWorkbook = (filename: string, html: string) => {
   const workbook = `
     <!doctype html>
@@ -53,6 +59,12 @@ const downloadWorkbook = (filename: string, html: string) => {
       <body>${html}</body>
     </html>
   `;
+
+  const bridge = (window as AndroidBridgeWindow).AndroidBridge;
+  if (bridge?.saveExportFile) {
+    bridge.saveExportFile(workbook, filename, 'application/vnd.ms-excel;charset=utf-8', false);
+    return;
+  }
 
   const blob = new Blob([workbook], { type: 'application/vnd.ms-excel;charset=utf-8;' });
   const url = URL.createObjectURL(blob);
@@ -92,7 +104,7 @@ export const exportConcreteExcel = (design: ConcreteDesign) => {
   const technicalWarnings = validateConcreteDesign(design);
 
   const summaryData: SheetCell[][] = [
-    ['REPORTE DE DISEÑO DE HORMIGÓN - CONCRETE DESIGN PRO'],
+    ['REPORTE DE DISEÑO DE HORMIGÓN · CALCULADORA DE HORMIGÓN (ENGINEERING SUITE PRO)'],
     ['DATOS DE LA OBRA'],
     ['Proyecto', design.projectInfo.projectName],
     ['Obra', design.projectInfo.workName],

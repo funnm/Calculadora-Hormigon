@@ -1,0 +1,298 @@
+/* ==========================================================================
+   Calculadora de Hormigón — Android Native WebView Ergonomics & Compat Layer
+   Chromium 70+ / Android 7.0 - 15+ (Engineering Suite Pro)
+   ========================================================================== */
+
+html.android-app {
+    -webkit-tap-highlight-color: transparent;
+    overscroll-behavior-y: contain;
+}
+
+html.android-app body {
+    overscroll-behavior-y: contain;
+    font-family: "Roboto", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+/* Never show web cookie banner inside standalone Android app */
+html.android-app #cookie-consent-banner {
+    display: none !important;
+}
+
+html.android-app button:focus,
+html.android-app .btn:focus,
+html.android-app .mobile-nav-item:focus,
+html.android-app .topbar-item:focus,
+html.android-app .topbar-icon-btn:focus,
+html.android-app .nav-link-custom:focus {
+    outline: none !important;
+}
+
+html.android-app .main-content,
+html.android-app .sidebar-body,
+html.android-app .workbench-inspector,
+html.android-app .table-wrap,
+html.android-app .modal-body-pro {
+    -webkit-overflow-scrolling: touch;
+}
+
+html.android-app .mobile-bottom-nav {
+    box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.14);
+}
+
+html.android-app .mobile-nav-item {
+    min-height: 48px;
+}
+
+html.android-app .plotly-canvas-host,
+html.android-app .plotly-canvas-host .js-plotly-plot {
+    touch-action: none !important;
+}
+
+/* ==========================================================================
+   Legacy Android WebView Fallbacks (Chromium < 84 / Android 7-9 Tablets)
+   Provides opaque surface fallbacks + Flexbox gap spacing (Chrome < 84)
+   ========================================================================== */
+
+html.android-legacy-webview #preloader {
+    top: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
+    left: 0 !important;
+}
+
+html.android-legacy-webview .topbar,
+html.android-legacy-webview .sidebar,
+html.android-legacy-webview .chart-card,
+html.android-legacy-webview .cad-card,
+html.android-legacy-webview .dash-card,
+html.android-legacy-webview .dash-mini-card,
+html.android-legacy-webview .object-card,
+html.android-legacy-webview .graph-toolbar,
+html.android-legacy-webview .results-toolbar-bar,
+html.android-legacy-webview .canvas-wrapper,
+html.android-legacy-webview .modal-card-pro,
+html.android-legacy-webview .dropdown-menu-pro,
+html.android-legacy-webview .app-footer-container {
+    background: #ffffff !important;
+}
+
+html.android-legacy-webview.dark-mode .topbar,
+html.android-legacy-webview.dark-mode .sidebar,
+html.android-legacy-webview.dark-mode .chart-card,
+html.android-legacy-webview.dark-mode .cad-card,
+html.android-legacy-webview.dark-mode .dash-card,
+html.android-legacy-webview.dark-mode .dash-mini-card,
+html.android-legacy-webview.dark-mode .object-card,
+html.android-legacy-webview.dark-mode .graph-toolbar,
+html.android-legacy-webview.dark-mode .results-toolbar-bar,
+html.android-legacy-webview.dark-mode .canvas-wrapper,
+html.android-legacy-webview.dark-mode .modal-card-pro,
+html.android-legacy-webview.dark-mode .dropdown-menu-pro,
+html.android-legacy-webview.dark-mode .app-footer-container {
+    background: #16171c !important;
+}
+
+html.android-legacy-webview .mobile-bottom-nav {
+    background: #ffffff !important;
+}
+
+html.android-legacy-webview.dark-mode .mobile-bottom-nav {
+    background: #111318 !important;
+    border-top-color: rgba(255, 255, 255, 0.12) !important;
+}
+
+/* 1. SVG Icon spacing inside buttons, links, headers, badges & titles (no flex-gap in Chrome 70) */
+html.android-legacy-webview .btn:not(.btn-icon-only) > svg:first-child,
+html.android-legacy-webview .topbar-file-btn > svg:first-child,
+html.android-legacy-webview .topbar-item > svg:first-child:not(:last-child),
+html.android-legacy-webview .dropdown-item-pro > svg:first-child,
+html.android-legacy-webview .nav-link-custom > svg:first-child,
+html.android-legacy-webview .keypad-toggle-header > svg:first-child,
+html.android-legacy-webview .results-view .key-action-btn > svg:first-child,
+html.android-legacy-webview .formula-pair .key-action-btn > svg:first-child,
+html.android-legacy-webview .canvas-ctrl-btn > svg:first-child:not(:last-child),
+html.android-legacy-webview .mobile-pane-switcher button > svg:first-child,
+html.android-legacy-webview .footer-link-btn > svg:first-child,
+html.android-legacy-webview .footer-link-a > svg:first-child,
+html.android-legacy-webview .footer-text-item > svg:first-child,
+html.android-legacy-webview .footer-tool-btn > svg:first-child,
+html.android-legacy-webview .status-badge-pill > svg:first-child,
+html.android-legacy-webview .memory-pill > svg:first-child,
+html.android-legacy-webview .footer-status-pill > svg:first-child,
+html.android-legacy-webview .save-status-pill > svg:first-child,
+html.android-legacy-webview .inspector-title-wrap > svg:first-child,
+html.android-legacy-webview .results-toolbar-title > svg:first-child,
+html.android-legacy-webview .modal-title-group > svg:first-child,
+html.android-legacy-webview .suite-ecosystem-head > svg:first-child,
+html.android-legacy-webview .app-footer-col-title > svg:first-child,
+html.android-legacy-webview .module-title > svg:first-child,
+html.android-legacy-webview .card-head-line h3 > svg:first-child,
+html.android-legacy-webview .card-head-line h4 > svg:first-child,
+html.android-legacy-webview .dash-section-head h3 > svg:first-child,
+html.android-legacy-webview .about-method-item h4 > svg:first-child,
+html.android-legacy-webview .dock-header strong > svg:first-child {
+    margin-right: 7px !important;
+}
+
+@media (max-width: 1024px) {
+    html.android-legacy-webview .topbar-item > svg:first-child {
+        margin-right: 0 !important;
+    }
+}
+
+html.android-legacy-webview .topbar-file-btn > svg:last-child,
+html.android-legacy-webview .keypad-toggle-header > svg:last-child,
+html.android-legacy-webview .dash-card-foot > svg:last-child {
+    margin-left: 6px !important;
+}
+
+/* Column flex items (Mobile Bottom Nav) */
+html.android-legacy-webview .mobile-nav-item > svg {
+    margin-right: 0 !important;
+    margin-bottom: 3px !important;
+}
+
+/* 2. Horizontal single-row Flex containers */
+html.android-legacy-webview .topbar-left > * + *,
+html.android-legacy-webview .topbar-menu > * + * {
+    margin-left: 7px !important;
+}
+
+html.android-legacy-webview .topbar-btn-group > * + * {
+    margin-left: 4px !important;
+}
+
+html.android-legacy-webview .project-title-trigger > * + * {
+    margin-left: 8px !important;
+}
+
+html.android-legacy-webview .sidebar-brand > * + * {
+    margin-left: 11px !important;
+}
+
+html.android-legacy-webview .sidebar-version-row > * + * {
+    margin-left: 5px !important;
+}
+
+html.android-legacy-webview .inline-actions > * + * {
+    margin-left: 6px !important;
+}
+
+html.android-legacy-webview .card-main > * + * {
+    margin-left: 10px !important;
+}
+
+html.android-legacy-webview .math-field-box > * + * {
+    margin-left: 6px !important;
+}
+
+html.android-legacy-webview .step-control > * + * {
+    margin-left: 6px !important;
+}
+
+html.android-legacy-webview .switch-row > * + *,
+html.android-legacy-webview .checkbox-row > * + * {
+    margin-left: 8px !important;
+}
+
+html.android-legacy-webview .telemetry-hud > * + * {
+    margin-left: 10px !important;
+}
+
+html.android-legacy-webview .dash-mini-card > * + * {
+    margin-left: 12px !important;
+}
+
+html.android-legacy-webview .suite-app-card > * + * {
+    margin-left: 12px !important;
+}
+
+html.android-legacy-webview .app-footer-brand > * + * {
+    margin-left: 14px !important;
+}
+
+html.android-legacy-webview .footer-status-pill > .footer-pulse-dot {
+    margin-right: 7px !important;
+}
+
+html.android-legacy-webview .footer-suite-member > .suite-dot {
+    margin-right: 7px !important;
+}
+
+html.android-legacy-webview .cookie-banner-title-group > * + *,
+html.android-legacy-webview .privacy-callout > * + * {
+    margin-left: 10px !important;
+}
+
+/* 3. Wrapping Flex containers (provides both horizontal and vertical margin when wrapping) */
+html.android-legacy-webview .preset-row > *,
+html.android-legacy-webview .function-actions > *,
+html.android-legacy-webview .marker-legend > *,
+html.android-legacy-webview .canvas-quick-controls > *,
+html.android-legacy-webview .characterization-row > *,
+html.android-legacy-webview .syntax-chip-row > *,
+html.android-legacy-webview .module-badges > *,
+html.android-legacy-webview .dash-memory-strip > *,
+html.android-legacy-webview .footer-title-row > *,
+html.android-legacy-webview .app-footer-toolbar-left > *,
+html.android-legacy-webview .app-footer-toolbar-right > *,
+html.android-legacy-webview .app-footer-status-pills > *,
+html.android-legacy-webview .template-filter-pills > *,
+html.android-legacy-webview .modal-toolbar-actions > *,
+html.android-legacy-webview .modal-footer-actions > *,
+html.android-legacy-webview .cookie-banner-actions > *,
+html.android-legacy-webview .suite-ecosystem-items > *,
+html.android-legacy-webview .inline-actions.wrap > * {
+    margin: 3px 6px 3px 0 !important;
+}
+
+/* Tailwind Flexbox gap & space-y fallbacks for Chromium < 84 */
+html.android-legacy-webview .flex:not(.flex-col).gap-1 > * + *,
+html.android-legacy-webview .inline-flex:not(.flex-col).gap-1 > * + * {
+    margin-left: 4px !important;
+}
+
+html.android-legacy-webview .flex:not(.flex-col).gap-2 > * + *,
+html.android-legacy-webview .inline-flex:not(.flex-col).gap-2 > * + *,
+html.android-legacy-webview .flex:not(.flex-col).gap-2\.5 > * + * {
+    margin-left: 8px !important;
+}
+
+html.android-legacy-webview .flex:not(.flex-col).gap-3 > * + *,
+html.android-legacy-webview .inline-flex:not(.flex-col).gap-3 > * + * {
+    margin-left: 12px !important;
+}
+
+html.android-legacy-webview .flex:not(.flex-col).gap-4 > * + *,
+html.android-legacy-webview .inline-flex:not(.flex-col).gap-4 > * + *,
+html.android-legacy-webview .flex:not(.flex-col).gap-5 > * + *,
+html.android-legacy-webview .flex:not(.flex-col).gap-6 > * + * {
+    margin-left: 16px !important;
+}
+
+html.android-legacy-webview .flex-col.gap-2 > * + *,
+html.android-legacy-webview .flex-col.gap-3 > * + * {
+    margin-top: 10px !important;
+}
+
+html.android-legacy-webview .flex-col.gap-4 > * + *,
+html.android-legacy-webview .flex-col.gap-6 > * + *,
+html.android-legacy-webview .flex-col.gap-8 > * + * {
+    margin-top: 16px !important;
+}
+
+html.android-legacy-webview .space-y-1 > * + * { margin-top: 4px !important; }
+html.android-legacy-webview .space-y-2 > * + * { margin-top: 8px !important; }
+html.android-legacy-webview .space-y-3 > * + * { margin-top: 12px !important; }
+html.android-legacy-webview .space-y-4 > * + * { margin-top: 16px !important; }
+html.android-legacy-webview .space-y-5 > * + * { margin-top: 20px !important; }
+html.android-legacy-webview .space-y-6 > * + * { margin-top: 24px !important; }
+html.android-legacy-webview .space-y-8 > * + * { margin-top: 32px !important; }
+html.android-legacy-webview .space-y-10 > * + * { margin-top: 36px !important; }
+
+html.android-legacy-webview .pro-btn-primary > svg:first-child,
+html.android-legacy-webview .pro-btn-secondary > svg:first-child,
+html.android-legacy-webview .sidebar-tool-btn > svg:first-child,
+html.android-legacy-webview .kpi-mini-head > svg:first-child {
+    margin-right: 6px !important;
+}

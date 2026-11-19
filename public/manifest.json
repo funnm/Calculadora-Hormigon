@@ -1,0 +1,31 @@
+{
+  "name": "Calculadora de Hormigón",
+  "short_name": "Hormigón",
+  "description": "Calculadora de Hormigón de Engineering Suite Pro: dosificación en obra (Holcim H-140 a H-350), diseño técnico ACI 211/318, granulometría y reportes PDF/Excel.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#f5f5f7",
+  "theme_color": "#111113",
+  "categories": ["education", "productivity", "utilities"],
+  "lang": "es",
+  "icons": [
+    {
+      "src": "/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    },
+    {
+      "src": "/icons/maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}

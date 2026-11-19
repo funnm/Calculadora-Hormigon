@@ -23,7 +23,13 @@ type AutoTableDoc = jsPDF & { lastAutoTable?: { finalY: number } };
 type TableCell = string | number;
 
 const lastTableY = (doc: jsPDF, fallback: number): number => (doc as AutoTableDoc).lastAutoTable?.finalY ?? fallback;
-const appVersion = import.meta.env.VITE_APP_VERSION || 'dev';
+const appVersion = import.meta.env.VITE_APP_VERSION || '2.0.0';
+
+interface AndroidBridgeWindow extends Window {
+  AndroidBridge?: {
+    saveExportFile?: (content: string, filename: string, mimeType: string, isBase64: boolean) => boolean;
+  };
+}
 
 const drawRegressionChart = (
   doc: jsPDF,
@@ -186,9 +192,9 @@ export const generateConcretePDF = (design: ConcreteDesign) => {
   doc.setFont('helvetica', 'bold');
   doc.text('INFORME TÉCNICO DE DISEÑO', pageWidth / 2, 20, { align: 'center' });
   doc.setFontSize(12);
-  doc.text('CONCRETE DESIGN PRO - INGENIERÍA DE MEZCLAS', pageWidth / 2, 30, { align: 'center' });
+  doc.text('CALCULADORA DE HORMIGÓN · ENGINEERING SUITE PRO', pageWidth / 2, 30, { align: 'center' });
   doc.setFontSize(8);
-  doc.text(`Autor: Paul R | Version ${appVersion}`, pageWidth / 2, 36, { align: 'center' });
+  doc.text(`Autor: Paul R | Versión ${appVersion}`, pageWidth / 2, 36, { align: 'center' });
 
   // Project Info
   doc.setTextColor(0, 0, 0);
@@ -491,5 +497,13 @@ export const generateConcretePDF = (design: ConcreteDesign) => {
   doc.line(pageWidth - 80, finalY, pageWidth - 20, finalY);
   doc.text('Sello Laboratorio', pageWidth - 50, finalY + 7, { align: 'center' });
 
-  doc.save(`Reporte_Hormigon_${design.projectInfo.projectName.replace(/\s+/g, '_')}.pdf`);
+  const filename = `Reporte_Hormigon_${design.projectInfo.projectName.replace(/\s+/g, '_')}.pdf`;
+  const bridge = (window as AndroidBridgeWindow).AndroidBridge;
+  if (bridge?.saveExportFile) {
+    const dataUri = doc.output('datauristring');
+    const base64 = dataUri.includes(',') ? dataUri.split(',')[1] : dataUri;
+    bridge.saveExportFile(base64, filename, 'application/pdf', true);
+    return;
+  }
+  doc.save(filename);
 };
